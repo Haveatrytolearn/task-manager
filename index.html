@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>Todo List</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="app-header">
+      <div>
+        <h1>Todo List</h1>
+        <p class="app-subtitle">Стильный ежедневный планировщик с будильником и типами дня.</p>
+      </div>
+    </header>
+
+    <main class="app-card">
+      <section class="lists-toolbar">
+        <label class="toolbar-label">
+          List
+          <select id="list-select" aria-label="Выберите список задач"></select>
+        </label>
+
+        <label class="toolbar-label">
+          Day type
+          <select id="list-type-select" aria-label="Выберите тип дня">
+            <option value="workday">Workday</option>
+            <option value="weekend">Weekend</option>
+          </select>
+        </label>
+
+        <label class="toolbar-label toolbar-input">
+          New list
+          <input id="new-list-name" type="text" placeholder="New list name" />
+        </label>
+
+        <div class="toolbar-actions">
+          <button id="create-list-button" type="button">Create list</button>
+          <button id="delete-list-button" type="button">Delete list</button>
+        </div>
+      </section>
+
+      <section id="list-overview" class="list-overview" aria-live="polite"></section>
+
+      <ul id="todo-list" class="todo-list"></ul>
+
+      <section id="new-task-input" class="task-form">
+        <div class="new-task-field">
+          <label class="toolbar-label" for="new-task-text">New todo task</label>
+          <textarea id="new-task-text" placeholder="Add a new task"></textarea>
+        </div>
+
+        <div class="task-form-right">
+          <label class="toolbar-label toolbar-small" for="new-task-date">
+            Date
+            <input id="new-task-date" type="date" />
+          </label>
+          <label class="toolbar-label toolbar-small" for="new-task-time">
+            Time
+            <input id="new-task-time" type="time" />
+          </label>
+          <label class="alarm-toggle">
+            <input id="new-task-alarm" type="checkbox" />
+            Set alarm
+          </label>
+          <button id="new-task-button" type="button">Add task</button>
+          <button id="cancel-edit-button" type="button" class="secondary-button hidden">Cancel</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Управляй задачами, отмечай важное и сохраняй прогресс прямо в браузере.</p>
+    </footer>
+
+    <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+      <div class="modal-content">
+        <h2 id="modal-title">Message</h2>
+        <p id="modal-message"></p>
+        <div class="modal-actions">
+          <button id="modal-cancel" type="button">Cancel</button>
+          <button id="modal-confirm" type="button">Ok</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
