@@ -3,12 +3,12 @@ let todoLists = [
     name: "My Tasks",
     tasks: [
       {
-        text: "Walk Chilli",
+        text: "Review today's tasks",
         complete: false,
-        important: false,
-        date: "",
-        time: "",
-        alarmEnabled: false,
+        important: true,
+        date: new Date().toISOString().slice(0, 10),
+        time: "09:00",
+        alarmEnabled: true,
         alarmLastTriggered: ""
       }
     ]
