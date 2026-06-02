@@ -1,7 +1,6 @@
 let todoLists = [
   {
     name: "My Tasks",
-    dayType: "workday",
     tasks: [
       {
         text: "Walk Chilli",
@@ -25,7 +24,6 @@ const modalTitle = document.getElementById("modal-title");
 const modalMessage = document.getElementById("modal-message");
 const modalCancel = document.getElementById("modal-cancel");
 const modalConfirm = document.getElementById("modal-confirm");
-const listTypeSelect = document.getElementById("list-type-select");
 const newTaskText = document.getElementById("new-task-text");
 const newTaskDate = document.getElementById("new-task-date");
 const newTaskTime = document.getElementById("new-task-time");
@@ -113,12 +111,19 @@ const saveEditedTask = () => {
   }
 
   const currentTasks = getCurrentTasks();
+  const originalTask = currentTasks[editTaskIndex];
+  const alarmChanged =
+    originalTask.alarmEnabled !== alarmEnabled ||
+    originalTask.time !== time ||
+    originalTask.date !== date;
   currentTasks[editTaskIndex] = {
     ...currentTasks[editTaskIndex],
     text,
     date,
     time,
-    alarmEnabled
+    alarmEnabled,
+    alarmLastTriggered:
+      alarmChanged && alarmEnabled ? "" : currentTasks[editTaskIndex].alarmLastTriggered
   };
 
   resetTaskForm();
@@ -170,7 +175,6 @@ const editTask = (index) => {
 
 const createList = () => {
   const listName = newListName.value.trim();
-  const dayType = listTypeSelect.value;
 
   if (!listName) {
     showAlertModal("Create list", "Please enter a name for the list.");
@@ -179,7 +183,6 @@ const createList = () => {
 
   todoLists.push({
     name: listName,
-    dayType,
     tasks: []
   });
 
@@ -188,7 +191,6 @@ const createList = () => {
 
   saveLists();
   updateListSelector();
-  updateListTypeInput();
   updateTodoList();
 };
 
@@ -210,7 +212,6 @@ const deleteCurrentList = () => {
       }
       saveLists();
       updateListSelector();
-      updateListTypeInput();
       updateTodoList();
     }
   );
@@ -218,14 +219,8 @@ const deleteCurrentList = () => {
 
 const switchList = () => {
   currentListIndex = Number(listSelect.value);
-  updateListTypeInput();
   saveLists();
   updateTodoList();
-};
-
-const updateListTypeInput = () => {
-  const currentList = getCurrentList();
-  listTypeSelect.value = currentList.dayType || "workday";
 };
 
 const updateListSelector = () => {
@@ -271,14 +266,12 @@ const updateListOverview = () => {
   const currentList = getCurrentList();
   const { total, completed, important, alarms } = getListSummary();
   const active = total - completed;
-  const dayLabel = currentList.dayType === "weekend" ? "Weekend" : "Workday";
   overview.innerHTML = `
     <div class="overview-row">
       <div>
         <p class="overview-label">Current list</p>
         <strong>${currentList.name}</strong>
       </div>
-      <div class="overview-pill">${dayLabel}</div>
       <div class="overview-pill">${active} active</div>
       <div class="overview-pill">${completed} done</div>
       <div class="overview-pill">${important} important</div>
@@ -294,7 +287,7 @@ const updateTodoList = () => {
   if (!currentTasks.length) {
     const emptyState = document.createElement("li");
     emptyState.className = "empty-state";
-    emptyState.innerText = "Список пуст. Добавьте первую задачу.";
+    emptyState.innerText = "No tasks. Add your first task.";
     todoList.appendChild(emptyState);
   } else {
     currentTasks.forEach((task, index) => {
@@ -476,7 +469,6 @@ const loadLists = () => {
     todoLists = [
       {
         name: "My Tasks",
-        dayType: "workday",
         tasks: []
       }
     ];
@@ -484,7 +476,6 @@ const loadLists = () => {
   }
   todoLists = todoLists.map((list) => ({
     name: list.name || "Untitled list",
-    dayType: list.dayType || "workday",
     tasks: (list.tasks || []).map((task) => ({
       text: task.text || "",
       complete: Boolean(task.complete),
@@ -528,21 +519,24 @@ const checkAlarms = () => {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
 
-  getCurrentTasks().forEach((task) => {
-    if (!task.alarmEnabled || task.complete || !task.time) return;
-    if (task.alarmLastTriggered === today) return;
+  const dueTask = getCurrentTasks().find((task) => {
+    if (!task.alarmEnabled || task.complete || !task.time) return false;
+    if (task.alarmLastTriggered === today) return false;
 
     const [hour, minute] = task.time.split(":").map(Number);
-    if (Number.isNaN(hour) || Number.isNaN(minute)) return;
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return false;
 
     const alarmTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
-    if (now >= alarmTime) {
-      playAlarmSound();
-      task.alarmLastTriggered = today;
-      saveLists();
-      updateTodoList();
-    }
+    return now >= alarmTime;
   });
+
+  if (!dueTask) return;
+
+  playAlarmSound();
+  dueTask.alarmLastTriggered = today;
+  saveLists();
+  updateTodoList();
+  showAlertModal("Alarm", `Task "${dueTask.text}" is due!`);
 };
 
 newTaskText.addEventListener("keydown", (event) => {
@@ -564,15 +558,9 @@ deleteListButton.addEventListener("click", deleteCurrentList);
 addTaskButton.addEventListener("click", handleTaskForm);
 cancelEditButton.addEventListener("click", resetTaskForm);
 listSelect.addEventListener("change", switchList);
-listTypeSelect.addEventListener("change", () => {
-  getCurrentList().dayType = listTypeSelect.value;
-  saveLists();
-  updateListOverview();
-});
 
 loadLists();
 updateListSelector();
-updateListTypeInput();
 updateTodoList();
 checkAlarms();
 setInterval(checkAlarms, 15000);
