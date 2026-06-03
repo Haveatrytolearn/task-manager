@@ -375,35 +375,75 @@ const createNewTodoItemElement = (task, index) => {
 
   const editBtn = document.createElement("button");
   editBtn.type = "button";
-  editBtn.className = "secondary-button";
+  editBtn.className = "secondary-button desktop-only";
   editBtn.innerText = "Edit";
   editBtn.addEventListener("click", () => editTask(index));
 
+  const editIconBtn = document.createElement("button");
+  editIconBtn.type = "button";
+  editIconBtn.className = "icon-button edit-button mobile-only";
+  editIconBtn.innerText = "✏️";
+  editIconBtn.title = "Edit";
+  editIconBtn.dataset.tooltip = "Edit";
+  editIconBtn.addEventListener("click", () => editTask(index));
+
   const importantBtn = document.createElement("button");
   importantBtn.type = "button";
-  importantBtn.className = "secondary-button";
+  importantBtn.className = "secondary-button desktop-only";
   importantBtn.innerText = task.important ? "Unmark" : "Important";
   importantBtn.addEventListener("click", () => toggleImportant(index));
 
+  const importantIconBtn = document.createElement("button");
+  importantIconBtn.type = "button";
+  importantIconBtn.className = "icon-button important-button mobile-only";
+  importantIconBtn.innerText = "❗";
+  importantIconBtn.title = "Mark as important";
+  importantIconBtn.dataset.tooltip = "Mark as important";
+  if (task.important) importantIconBtn.classList.add("active");
+  importantIconBtn.addEventListener("click", () => toggleImportant(index));
+
   const completeBtn = document.createElement("button");
   completeBtn.type = "button";
-  completeBtn.className = "secondary-button";
+  completeBtn.className = "secondary-button desktop-only";
   completeBtn.innerText = task.complete ? "Undo" : "Done";
   completeBtn.addEventListener("click", () => toggleComplete(index));
 
+  const completeLabel = document.createElement("label");
+  completeLabel.className = "complete-checkbox mobile-only";
+  completeLabel.title = task.complete ? "Mark as not done" : "Mark as done";
+  completeLabel.dataset.tooltip = task.complete ? "Mark as not done" : "Mark as done";
+  const completeInput = document.createElement("input");
+  completeInput.type = "checkbox";
+  completeInput.checked = task.complete;
+  completeInput.addEventListener("change", () => toggleComplete(index));
+  completeLabel.appendChild(completeInput);
+  completeLabel.appendChild(document.createElement("span"));
+
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
-  deleteBtn.className = "delete-task-btn";
+  deleteBtn.className = "delete-task-btn desktop-only";
   deleteBtn.innerText = "Delete";
   deleteBtn.addEventListener("click", () => deleteTask(index));
 
+  const deleteIconBtn = document.createElement("button");
+  deleteIconBtn.type = "button";
+  deleteIconBtn.className = "icon-button delete-button mobile-only";
+  deleteIconBtn.innerText = "🗑️";
+  deleteIconBtn.title = "Delete";
+  deleteIconBtn.dataset.tooltip = "Delete";
+  deleteIconBtn.addEventListener("click", () => deleteTask(index));
+
+  li.appendChild(completeLabel);
+  li.appendChild(p);
   buttonsContainer.appendChild(scheduleElement);
   buttonsContainer.appendChild(editBtn);
+  buttonsContainer.appendChild(editIconBtn);
   buttonsContainer.appendChild(importantBtn);
+  buttonsContainer.appendChild(importantIconBtn);
   buttonsContainer.appendChild(completeBtn);
   buttonsContainer.appendChild(deleteBtn);
+  buttonsContainer.appendChild(deleteIconBtn);
 
-  li.appendChild(p);
   li.appendChild(buttonsContainer);
 
   return li;
