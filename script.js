@@ -10,6 +10,15 @@ let todoLists = [
         time: "09:00",
         alarmEnabled: true,
         alarmLastTriggered: ""
+      },
+      {
+        text: "Check email inbox",
+        complete: false,
+        important: false,
+        date: "",
+        time: "",
+        alarmEnabled: false,
+         alarmLastTriggered: ""
       }
     ]
   }
@@ -36,6 +45,23 @@ const addTaskButton = document.getElementById("new-task-button");
 const cancelEditButton = document.getElementById("cancel-edit-button");
 
 let confirmAction = null;
+let alarmAudioContext = null;
+let alarmAudioUnlocked = false;
+
+const unlockAlarmAudio = () => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext || alarmAudioUnlocked) return;
+
+  alarmAudioContext = new AudioContext();
+  if (alarmAudioContext.state === "suspended") {
+    alarmAudioContext.resume();
+  }
+
+  alarmAudioUnlocked = true;
+};
+
+document.addEventListener("click", unlockAlarmAudio, { once: true, capture: true });
+document.addEventListener("keydown", unlockAlarmAudio, { once: true, capture: true });
 
 const showAlertModal = (title, message) => {
   modalTitle.innerText = title;
@@ -310,9 +336,26 @@ const createNewTodoItemElement = (task, index) => {
   buttonsContainer.classList.add("task-buttons");
 
   const scheduleElement = document.createElement("span");
-  scheduleElement.innerText = formatScheduleText(task.date, task.time) || "No schedule";
   scheduleElement.classList.add("due-date");
   if (task.alarmEnabled) scheduleElement.classList.add("alarm-set");
+
+  if (task.date || task.time) {
+    if (task.date) {
+      const dateLine = document.createElement("span");
+      dateLine.className = "due-date-line due-date-date";
+      dateLine.innerText = formatDate(task.date);
+      scheduleElement.appendChild(dateLine);
+    }
+
+    if (task.time) {
+      const timeLine = document.createElement("span");
+      timeLine.className = "due-date-line due-date-time";
+      timeLine.innerText = task.time;
+      scheduleElement.appendChild(timeLine);
+    }
+  } else {
+    scheduleElement.innerText = "No schedule";
+  }
 
   if (task.date && !task.complete) {
     const today = new Date();
@@ -402,11 +445,16 @@ const createNewTodoItemElement = (task, index) => {
   if (task.important) importantIconBtn.classList.add("active");
   importantIconBtn.addEventListener("click", () => toggleImportant(index));
 
-  const completeBtn = document.createElement("button");
-  completeBtn.type = "button";
-  completeBtn.className = "secondary-button desktop-only";
-  completeBtn.innerText = task.complete ? "Undo" : "Done";
-  completeBtn.addEventListener("click", () => toggleComplete(index));
+  const desktopCompleteLabel = document.createElement("label");
+  desktopCompleteLabel.className = "complete-checkbox desktop-only";
+  desktopCompleteLabel.title = task.complete ? "Mark as not done" : "Mark as done";
+  desktopCompleteLabel.dataset.tooltip = task.complete ? "Mark as not done" : "Mark as done";
+  const desktopCompleteInput = document.createElement("input");
+  desktopCompleteInput.type = "checkbox";
+  desktopCompleteInput.checked = task.complete;
+  desktopCompleteInput.addEventListener("change", () => toggleComplete(index));
+  desktopCompleteLabel.appendChild(desktopCompleteInput);
+  desktopCompleteLabel.appendChild(document.createElement("span"));
 
   const completeLabel = document.createElement("label");
   completeLabel.className = "complete-checkbox mobile-only";
@@ -421,28 +469,21 @@ const createNewTodoItemElement = (task, index) => {
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
-  deleteBtn.className = "delete-task-btn desktop-only";
-  deleteBtn.innerText = "Delete";
+  deleteBtn.className = "delete-task-btn";
+  deleteBtn.innerText = "×";
+  deleteBtn.title = "Delete";
+  deleteBtn.dataset.tooltip = "Delete";
   deleteBtn.addEventListener("click", () => deleteTask(index));
 
-  const deleteIconBtn = document.createElement("button");
-  deleteIconBtn.type = "button";
-  deleteIconBtn.className = "icon-button delete-button mobile-only";
-  deleteIconBtn.innerText = "🗑️";
-  deleteIconBtn.title = "Delete";
-  deleteIconBtn.dataset.tooltip = "Delete";
-  deleteIconBtn.addEventListener("click", () => deleteTask(index));
-
+  li.appendChild(desktopCompleteLabel);
   li.appendChild(completeLabel);
   li.appendChild(p);
+  li.appendChild(deleteBtn);
   buttonsContainer.appendChild(scheduleElement);
   buttonsContainer.appendChild(editBtn);
   buttonsContainer.appendChild(editIconBtn);
   buttonsContainer.appendChild(importantBtn);
   buttonsContainer.appendChild(importantIconBtn);
-  buttonsContainer.appendChild(completeBtn);
-  buttonsContainer.appendChild(deleteBtn);
-  buttonsContainer.appendChild(deleteIconBtn);
 
   li.appendChild(buttonsContainer);
 
@@ -535,24 +576,28 @@ const playAlarmSound = () => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
 
-  const ctx = new AudioContext();
-  const oscillator = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  oscillator.type = "sine";
-  oscillator.frequency.value = 880;
-  oscillator.connect(gain);
-  gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(0.001, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
-
-  oscillator.start(ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.1);
-  oscillator.stop(ctx.currentTime + 1.1);
-
+  const ctx = alarmAudioContext || new AudioContext();
   if (ctx.state === "suspended") {
     ctx.resume();
   }
+
+  if (!alarmAudioContext) {
+    alarmAudioContext = ctx;
+  }
+
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  oscillator.type = "triangle";
+  oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(0.02, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.02);
+
+  oscillator.start(ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+  oscillator.stop(ctx.currentTime + 1.2);
 };
 
 const checkAlarms = () => {
