@@ -7,7 +7,7 @@ let todoLists = [
         complete: false,
         important: true,
         date: new Date().toISOString().slice(0, 10),
-        time: "09:00",
+        time: "",
         alarmEnabled: true,
         alarmLastTriggered: ""
       },
